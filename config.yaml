@@ -1,31 +1,68 @@
 project:
   name: "ArXiv-Multi-Agent-Assistant"
+  version: "1.0.0"
 
 data:
-  output_dir: "./data"
-  pdf_dir: "pdfs"
-  metadata_file: "metadata.json"
+  output_dir: "./data"           # 所有資料的根目錄
+  pdf_dir: "pdfs"                # PDF 存放子目錄
+  metadata_file: "metadata.json" # 抓取的原始論文資訊
 
+system:
+  logging_level: "INFO"
+  device: "cpu"                  # 若有 NVIDIA 顯卡可改為 "cuda" (針對 Vector Agent)
+
+# === 1. 抓取代理設定 ===
 scraper:
   keywords: 
     - "Multi-Agent Systems"
     - "Large Language Model Agents"
-  max_results: 5            # 每次搜尋最大篇數
-  sort_by: "submittedDate"  # 按提交時間排序
-  retry_attempts: 3         # 失敗重試次數
-  sleep_interval: 2         # 下載間隔秒數 (避免被 ban)
+    - "RAG Systems"
+  max_results: 3                 # 每次執行抓取的最大篇數 (建議測試時設小一點)
+  sort_by: "submittedDate"       # 排序方式
+  retry_attempts: 3              # 下載失敗重試次數
+  sleep_interval: 2              # 請求間隔秒數 (禮貌爬蟲)
 
-system:
-  logging_level: "INFO"
-
+# === 2. 解析代理設定 ===
 parser:
-  chunk_size: 2000        # 每個區塊的字元數 (約 500-800 tokens)
-  chunk_overlap: 200      # 區塊間的重疊字元數 (保持上下文連貫)
-  ignore_references: true # 是否自動去除 "References" 之後的內容
-  output_file: "parsed_papers.json" # 解析後的存檔名稱
+  chunk_size: 1000               # 每個文字塊的字元數 (約 250-400 tokens)
+  chunk_overlap: 100             # 文字塊間的重疊部分
+  ignore_references: true        # 是否自動去除 "References" 之後的內容
+  output_file: "parsed_papers.json" # 解析後的結構化資料
 
+# === 3. 向量代理設定 ===
 vector:
-  model_name: "all-MiniLM-L6-v2"  # HuggingFace 模型名稱
-  index_file: "faiss_index.bin"   # 向量索引存檔
-  chunks_map_file: "chunks_map.json" # 向量 ID 對應到的原始文字
-  batch_size: 32                  # 批次處理數量
+  model_name: "all-MiniLM-L6-v2"      # HuggingFace Embedding 模型
+  index_file: "faiss_index.bin"       # FAISS 索引存檔
+  chunks_map_file: "chunks_map.json"  # ID 與文字對照表
+  batch_size: 32                      # 向量轉換的批次大小
+
+# === 4. 摘要代理設定 (Ollama) ===
+summarizer:
+  model_name: "llama3.2"  # ⚠️ 必須與 `ollama list` 中的名稱一致
+  
+  # 系統提示詞：定義 Agent 的人設
+  system_prompt: |
+    You are an academic research assistant. 
+    Your goal is to summarize technical papers clearly and concisely for a developer audience.
+    Always answer in Traditional Chinese (繁體中文).
+
+  # 各種摘要模式的 Prompt 模板
+  prompts:
+    quick_summary: |
+      Here is the information of a paper:
+      {text}
+      
+      Please provide a quick summary in 3 bullet points in Traditional Chinese:
+      1. Core Problem (這篇論文想解決什麼問題?)
+      2. Key Methodology (他們用了什麼主要方法?)
+      3. Main Result (結果如何?)
+
+    detailed_report: |
+      Context from the paper:
+      {text}
+      
+      Please generate a comprehensive report in Traditional Chinese with the following sections:
+      ## 1. 背景與動機 (Background)
+      ## 2. 核心技術與創新點 (Methodology)
+      ## 3. 實驗結果 (Results)
+      ## 4. 結論 (Conclusion)
