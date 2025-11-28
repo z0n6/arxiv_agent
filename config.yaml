@@ -17,3 +17,9 @@ scraper:
 
 system:
   logging_level: "INFO"
+
+parser:
+  chunk_size: 2000        # 每個區塊的字元數 (約 500-800 tokens)
+  chunk_overlap: 200      # 區塊間的重疊字元數 (保持上下文連貫)
+  ignore_references: true # 是否自動去除 "References" 之後的內容
+  output_file: "parsed_papers.json" # 解析後的存檔名稱
