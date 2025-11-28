@@ -23,3 +23,9 @@ parser:
   chunk_overlap: 200      # 區塊間的重疊字元數 (保持上下文連貫)
   ignore_references: true # 是否自動去除 "References" 之後的內容
   output_file: "parsed_papers.json" # 解析後的存檔名稱
+
+vector:
+  model_name: "all-MiniLM-L6-v2"  # HuggingFace 模型名稱
+  index_file: "faiss_index.bin"   # 向量索引存檔
+  chunks_map_file: "chunks_map.json" # 向量 ID 對應到的原始文字
+  batch_size: 32                  # 批次處理數量
