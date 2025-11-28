@@ -6,7 +6,7 @@ from loguru import logger
 from typing import Dict, Any, List
 
 # 引入 VectorAgent 以便進行 RAG 檢索
-from src.agents.vector_agent import VectorAgent
+from agents.vector_agent import VectorAgent
 
 class SummarizerAgent:
     def __init__(self, config_path: str = "config.yaml"):

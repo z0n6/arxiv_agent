@@ -66,3 +66,9 @@ summarizer:
       ## 2. 核心技術與創新點 (Methodology)
       ## 3. 實驗結果 (Results)
       ## 4. 結論 (Conclusion)
+
+# === 5. 報告代理設定 (UI) ===
+reporter:
+  graph_output_file: "knowledge_graph.html"
+  app_title: "🤖 ArXiv Multi-Agent Assistant"
+  theme_color: "#FF4B4B"
