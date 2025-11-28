@@ -1,0 +1,14 @@
+*.swp
+
+# Python 虛擬環境
+venv/
+.venv/
+__pycache__/
+
+# 專案資料 (僅忽略大文件和自動生成的文件)
+data/pdfs/
+data/faiss_index/  # 向量索引通常也很大
+data/*.log         # Log 檔案
+
+# 不忽略 metadata.json (作為 Phase 1 交付物的一部分)
+# !data/metadata.json

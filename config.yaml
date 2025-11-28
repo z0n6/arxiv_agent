@@ -1,0 +1,19 @@
+project:
+  name: "ArXiv-Multi-Agent-Assistant"
+
+data:
+  output_dir: "./data"
+  pdf_dir: "pdfs"
+  metadata_file: "metadata.json"
+
+scraper:
+  keywords: 
+    - "Multi-Agent Systems"
+    - "Large Language Model Agents"
+  max_results: 5            # 每次搜尋最大篇數
+  sort_by: "submittedDate"  # 按提交時間排序
+  retry_attempts: 3         # 失敗重試次數
+  sleep_interval: 2         # 下載間隔秒數 (避免被 ban)
+
+system:
+  logging_level: "INFO"
