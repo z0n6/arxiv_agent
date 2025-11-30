@@ -1,47 +1,155 @@
-# 📚 Multi-Agent Academic Research Assistant (ArXiv Intelligence)
+# 🤖 ArXiv Multi-Agent Research Assistant
 
-## [cite_start]🎯 專案目標 [cite: 3]
-[cite_start]本專案目標是完成一個可運作的多代理 (Multi-Agents) 系統原型 [cite: 3]，自動化執行 ArXiv 論文的抓取、解析、摘要與報告生成工作流。本系統強調**本地部署**與**成本控制**。
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![React](https://img.shields.io/badge/react-18-cyan)
+![FastAPI](https://img.shields.io/badge/fastapi-0.109-green)
+![Ollama](https://img.shields.io/badge/AI-Ollama-orange)
 
-## 🤖 系統架構 (Multi-Agent Architecture)
-本系統採用 Pipeline 協作模式，目前已完成 **Phase 1: 抓取代理 (Scraper Agent)**。
+An intelligent, local-first academic research assistant powered by **Multi-Agent Systems** and **Local LLMs**. It automates the workflow of discovering, parsing, and summarizing ArXiv papers, presented in a modern, dark-mode enabled web interface.
 
-| 代理名稱 | 職責 | 狀態 |
+---
+
+## ✨ Key Features
+
+* **🕵️ Multi-Agent Workflow**: Automated pipeline involving Scraper, Parser, Vector Embedding, and Summarizer agents.
+* **🧠 Local Intelligence**: Uses **Ollama (Llama 3)** for privacy-preserving, cost-free summarization. No API keys required.
+* **🔍 RAG-Powered Insights**: Retrieves relevant context from full PDF texts to generate accurate academic summaries.
+* **💻 Modern UI**: Responsive React frontend with **Google-style search**, stacked card layout, and smooth animations.
+* **🌗 Smart Dark Mode**: Automatically syncs with system preferences, with a manual toggle override.
+* **📂 Advanced Filtering**: Filter papers by ArXiv categories (e.g., CV, NLP, Robotics), time range, and keywords.
+
+---
+
+## 🏗️ System Architecture
+
+The system follows a **Headless Architecture** separating the Python backend agents from the React frontend.
+
+| Component | Technology | Description |
 | :--- | :--- | :--- |
-| 🕵️ Scraper Agent | 抓取 Metadata 與 PDF。 | ✅ 完成 |
-| 🔬 Parser Agent | PDF 解析、文字清洗、OCR 容錯處理。 | 🚧 開發中 (Phase 2) |
-| 🧠 Vector Agent | 生成 Embedding，維護 FAISS 索引，執行語意檢索。 | 🚧 待開發 |
-| 📝 Summarizer Agent | 調用 Local LLM 生成多級摘要。 | 🚧 待開發 |
-| 📊 Reporter Agent | 繪製關聯圖，生成 Streamlit 周報。 | 🚧 待開發 |
+| **Frontend** | React + Vite + Tailwind CSS | Interactive dashboard for searching and viewing summaries. |
+| **Backend API** | FastAPI | RESTful API to orchestrate agents and serve data. |
+| **Scraper Agent** | `arxiv` library | Fetches metadata and PDFs with incremental updates. |
+| **Parser Agent** | `PyMuPDF` | Extracts text from PDFs and handles cleaning/chunking. |
+| **Vector Agent** | `FAISS` + `Sentence-Transformers` | Creates vector embeddings for semantic search (RAG). |
+| **Summarizer Agent** | `Ollama` (Llama 3) | Generates structured markdown summaries using local LLM. |
 
-## 🛠️ 開發環境設置
+---
 
-### 前置要求
-1.  Python 3.10, 3.11 或 3.12 (推薦)，以避免 `cgi` 模組移除問題。
-2.  建議使用 `venv` 或 `uv` 建立虛擬環境。
+## 🚀 Getting Started
 
-### 步驟 1: 環境建置
+### Prerequisites
+
+* **Python 3.10+**
+* **Node.js 18+** (for Frontend)
+* **Ollama**: Installed and running locally ([Download Here](https://ollama.com/)).
+
+### 1. Setup Backend (Python)
+
 ```bash
-# 建立並啟動虛擬環境 (以 venv 為例)
-# pip install uv (如果還沒有安裝uv)
-uv venv
-source .venv/bin/activate 
+# Clone the repository
+git clone [https://github.com/your-username/arxiv-agent.git](https://github.com/your-username/arxiv-agent.git)
+cd arxiv-agent
 
-# 安裝依賴套件
-uv venv --python 3.11
-uv pip install -r requirements.txt
+# Create virtual environment (Recommended: uv or venv)
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the Backend Server
+python src/api.py
+````
+
+*The API will start at `http://localhost:8001`.*
+
+### 2\. Setup Frontend (React)
+
+Open a new terminal window:
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start the Frontend
+npm run dev
 ```
 
-### 步驟 2: 配置
-修改根目錄下的 `config.yaml` 檔案，設定您的搜尋關鍵詞 (`scraper:keywords`) 和最大結果數。
+*The UI will open at `http://localhost:5173`.*
 
-### 步驟 3: 執行 Scraper Agent
-執行 `test_scraper.py` 即可啟動抓取流程。
+### 3\. Initialize AI Model
 
-```Bash
-python test_scraper.py
+Ensure Ollama is running and pull the recommended model (must match `config.yaml`):
+
+```bash
+ollama pull llama3.2
 ```
 
-### 輸出結果驗證 (Phase 1 成功標準)
-1. `data/pdfs/` 資料夾中包含下載的 PDF 檔案。
-2. `data/metadata.json` 檔案中包含結構化的論文 Metadata、摘要及本地路徑。
+-----
+
+## 📖 Usage Guide
+
+1.  **Fetch Data**: Click the **"Fetch Papers"** button in the top-right corner. The system will scrape the latest papers based on keywords defined in `config.yaml`.
+2.  **Search & Filter**: Use the search bar to find topics. Use the dropdown to filter by category (e.g., *Computer Vision*) or time (e.g., *Past week*).
+3.  **Generate Summary**: Click **"Generate AI Summary"** on any paper card. The agent will read the PDF locally and produce a structured report.
+4.  **Dark Mode**: Toggle the moon/sun icon in the header to switch themes.
+
+-----
+
+## ⚙️ Configuration
+
+You can customize the agents' behavior in `config.yaml`:
+
+```yaml
+scraper:
+  keywords: ["Multi-Agent Systems", "LLM", "Generative AI"]
+  max_results: 10
+
+summarizer:
+  model_name: "llama3.2"
+  # You can tweak system prompts here
+```
+
+-----
+
+## 📂 Project Structure
+
+```text
+arxiv-agent/
+├── config.yaml              # Global configuration
+├── data/                    # PDF storage & Metadata DB
+├── frontend/                # React Source Code
+│   ├── src/
+│   │   ├── App.jsx          # Main UI Logic
+│   │   └── index.css        # Tailwind Global Styles
+│   └── tailwind.config.js
+├── src/                     # Python Backend Source
+│   ├── agents/              # Multi-Agent Logic
+│   │   ├── scraper_agent.py
+│   │   ├── parser_agent.py
+│   │   ├── vector_agent.py
+│   │   └── summarizer_agent.py
+│   └── api.py               # FastAPI Entry Point
+└── requirements.txt         # Python Dependencies
+```
+
+-----
+
+## 🤝 Contributing
+
+Contributions are welcome\! Please feel free to submit a Pull Request.
+
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+-----
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
