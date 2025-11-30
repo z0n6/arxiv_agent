@@ -3,50 +3,48 @@ project:
   version: "1.0.0"
 
 data:
-  output_dir: "./data"           # 所有資料的根目錄
-  pdf_dir: "pdfs"                # PDF 存放子目錄
-  metadata_file: "metadata.json" # 抓取的原始論文資訊
+  output_dir: "./data"           # Root directory for all data
+  pdf_dir: "pdfs"                # Subdirectory for storing PDFs
+  metadata_file: "metadata.json" # Raw paper information retrieved
 
 system:
   logging_level: "INFO"
-  device: "cpu"                  # 若有 NVIDIA 顯卡可改為 "cuda" (針對 Vector Agent)
+  device: "cpu"                  # Change to "cuda" if you have NVIDIA GPU (for Vector Agent)
 
-# === 1. 抓取代理設定 ===
+# === 1. Scraper Agent Settings ===
 scraper:
   keywords: 
     - "Multi-Agent Systems"
     - "Large Language Model Agents"
     - "RAG Systems"
-  max_results: 30                # 每次執行抓取的最大篇數 (建議測試時設小一點)
-  sort_by: "submittedDate"       # 排序方式
-  retry_attempts: 3              # 下載失敗重試次數
-  sleep_interval: 2              # 請求間隔秒數 (禮貌爬蟲)
+  max_results: 30                # Maximum number of papers to scrape per run (recommended to set small for testing)
+  sort_by: "submittedDate"       # Sorting method
+  retry_attempts: 3              # Number of retry attempts for failed downloads
+  sleep_interval: 2              # Sleep interval in seconds (polite crawling)
 
-# === 2. 解析代理設定 ===
+# === 2. Parser Agent Settings ===
 parser:
-  chunk_size: 1000               # 每個文字塊的字元數 (約 250-400 tokens)
-  chunk_overlap: 100             # 文字塊間的重疊部分
-  ignore_references: true        # 是否自動去除 "References" 之後的內容
-  output_file: "parsed_papers.json" # 解析後的結構化資料
+  chunk_size: 1000               # Number of characters per text chunk (approx. 250-400 tokens)
+  chunk_overlap: 100             # Overlap between text chunks
+  ignore_references: true        # Whether to automatically remove content after "References"
+  output_file: "parsed_papers.json" # Structured data after parsing
 
-# === 3. 向量代理設定 ===
+# === 3. Vector Agent Settings ===
 vector:
-  model_name: "all-MiniLM-L6-v2"      # HuggingFace Embedding 模型
-  index_file: "faiss_index.bin"       # FAISS 索引存檔
-  chunks_map_file: "chunks_map.json"  # ID 與文字對照表
-  batch_size: 32                      # 向量轉換的批次大小
+  model_name: "all-MiniLM-L6-v2"      # HuggingFace Embedding model
+  index_file: "faiss_index.bin"       # FAISS index file
+  chunks_map_file: "chunks_map.json"  # ID to text mapping
+  batch_size: 32                      # Batch size for vector conversion
 
-# === 4. 摘要代理設定 (Ollama) ===
+# === 4. Summarizer Agent Settings (Ollama) ===
 summarizer:
   model_name: "llama3.2"
   
-  # 修改 System Prompt：強制要求英文回答
   system_prompt: |
     You are an expert academic research assistant. 
     Your goal is to summarize technical papers clearly and concisely for a developer and researcher audience.
     Always answer in English. Use professional academic tone.
 
-  # 修改 Prompt Templates：將問題改為英文
   prompts:
     quick_summary: |
       Here is the abstract and key sections of a paper:
@@ -69,7 +67,7 @@ summarizer:
       ## 3. Experimental Results
       ## 4. Conclusion & Future Work
 
-# === 5. 報告代理設定 (UI) ===
+# === 5. Reporter Agent Settings (UI) ===
 reporter:
   graph_output_file: "knowledge_graph.html"
   app_title: "🤖 ArXiv Multi-Agent Assistant"

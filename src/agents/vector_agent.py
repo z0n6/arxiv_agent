@@ -13,14 +13,14 @@ class VectorAgent:
         self.config = self._load_config(config_path)
         self.data_dir = self.config['data']['output_dir']
         
-        # 輸入：解析後的論文
+        # Input: parsed papers
         self.input_path = os.path.join(self.data_dir, self.config['parser']['output_file'])
         
-        # 輸出：FAISS 索引 與 ID 對照表
+        # Output: FAISS index and ID mapping
         self.index_path = os.path.join(self.data_dir, self.config['vector']['index_file'])
         self.map_path = os.path.join(self.data_dir, self.config['vector']['chunks_map_file'])
         
-        # 載入模型 (第一次執行會自動下載，約 80MB)
+        # Load model (first run will auto-download, about 80MB)
         model_name = self.config['vector']['model_name']
         logger.info(f"🧠 Loading embedding model: {model_name}...")
         self.model = SentenceTransformer(model_name)
@@ -43,9 +43,9 @@ class VectorAgent:
             return
 
         all_chunks = []
-        metadata_map = {} # 用於檢索時反查： ID -> (Paper Title, Text)
+        metadata_map = {} # For reverse lookup during retrieval: ID -> (Paper Title, Text)
         
-        # 1. 整理所有論文的 Chunks
+        # 1. Organize all paper chunks
         global_id = 0
         logger.info("📦 Preparing chunks for embedding...")
         
@@ -64,23 +64,23 @@ class VectorAgent:
             logger.warning("No chunks found to embed.")
             return
 
-        # 2. 生成向量 (Embedding)
+        # 2. Generate vectors (Embedding)
         logger.info(f"🚀 Embedding {len(all_chunks)} chunks... (This may take a while)")
         batch_size = self.config['vector']['batch_size']
         
-        # encode 會回傳 numpy array
+        # encode returns numpy array
         embeddings = self.model.encode(all_chunks, batch_size=batch_size, show_progress_bar=True)
         
-        # 3. 建立 FAISS 索引
-        # 向量維度 (all-MiniLM-L6-v2 是 384 維)
+        # 3. Create FAISS index
+        # Vector dimension (all-MiniLM-L6-v2 is 384 dimensions)
         dimension = embeddings.shape[1] 
-        index = faiss.IndexFlatL2(dimension) # 使用 L2 距離 (歐式距離)
+        index = faiss.IndexFlatL2(dimension) # Use L2 distance (Euclidean distance)
         
-        # 加入向量
+        # Add vectors
         index.add(embeddings)
         logger.info(f"✅ Created FAISS index with {index.ntotal} vectors.")
 
-        # 4. 存檔
+        # 4. Save files
         faiss.write_index(index, self.index_path)
         with open(self.map_path, 'w', encoding='utf-8') as f:
             json.dump(metadata_map, f, ensure_ascii=False, indent=2)
@@ -89,7 +89,7 @@ class VectorAgent:
         logger.success(f"💾 Map saved to {self.map_path}")
 
     def search(self, query: str, top_k: int = 3) -> List[Dict]:
-        """(測試用) 語意搜尋功能"""
+        """(For testing) Semantic search function"""
         if not os.path.exists(self.index_path):
             logger.error("❌ Index not found. Run create_index() first.")
             return []
@@ -99,18 +99,18 @@ class VectorAgent:
         with open(self.map_path, 'r', encoding='utf-8') as f:
             metadata_map = json.load(f)
 
-        # 查詢向量化
+        # Query vectorization
         query_vector = self.model.encode([query])
         
-        # 搜尋
+        # Search
         distances, indices = index.search(query_vector, top_k)
         
         results = []
         for i, idx in enumerate(indices[0]):
-            if idx == -1: continue # 無結果
+            if idx == -1: continue # No results
             meta = metadata_map.get(str(idx), {})
             results.append({
-                "score": float(distances[0][i]), # 距離越小越相似
+                "score": float(distances[0][i]), # Smaller distance means more similar
                 "paper_title": meta.get('title'),
                 "text": meta.get('text')
             })
@@ -118,6 +118,6 @@ class VectorAgent:
         return results
 
 if __name__ == "__main__":
-    # 單獨執行時，建立索引
+    # When run standalone, create index
     agent = VectorAgent()
     agent.create_index()

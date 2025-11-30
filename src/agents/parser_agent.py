@@ -28,18 +28,18 @@ class ParserAgent:
             return json.load(f)
 
     def clean_text(self, text: str) -> str:
-        """清洗提取出的文字"""
-        # 1. 將多個換行符號替換為單一空格 (將段落接起來)
+        """Clean extracted text"""
+        # 1. Replace multiple newlines with single space (join paragraphs)
         text = text.replace('\n', ' ')
-        # 2. 去除多餘的空格
+        # 2. Remove extra spaces
         text = re.sub(r'\s+', ' ', text).strip()
-        # 3. (可選) 去除連字符號 (例如 "algorithm-" + "ic" -> "algorithmic")
+        # 3. (Optional) Remove hyphens (e.g., "algorithm-" + "ic" -> "algorithmic")
         text = text.replace('- ', '') 
         return text
 
     def remove_references(self, text: str) -> str:
-        """嘗試去除 References 之後的內容"""
-        # 常見的參考文獻標題寫法
+        """Try to remove content after References"""
+        # Common reference section title formats
         patterns = [
             r"\nReferences\n", 
             r"\nREFERENCES\n", 
@@ -48,14 +48,14 @@ class ParserAgent:
         for pattern in patterns:
             split_text = re.split(pattern, text)
             if len(split_text) > 1:
-                # 假設最後一個部分是參考文獻，將其捨棄
-                # 但要小心，有時候 References 會出現在中間（較少見），這裡採取簡策略：
-                # 取最後一個分割點之前的所有內容
+                # Assume the last part is references, discard it
+                # But be careful, sometimes References appear in the middle (rare), here we use a simple strategy:
+                # Take all content before the last split point
                 return pattern.join(split_text[:-1])
         return text
 
     def chunk_text(self, text: str) -> List[str]:
-        """滑動視窗分塊 (Sliding Window Chunking)"""
+        """Sliding Window Chunking"""
         chunk_size = self.config['parser']['chunk_size']
         overlap = self.config['parser']['chunk_overlap']
         
@@ -68,13 +68,13 @@ class ParserAgent:
             chunk = text[start:end]
             chunks.append(chunk)
             
-            # 移動視窗 (前進 step = chunk_size - overlap)
+            # Move window (advance step = chunk_size - overlap)
             start += (chunk_size - overlap)
         
         return chunks
 
     def parse_pdf(self, file_path: str) -> str:
-        """使用 PyMuPDF 提取全文"""
+        """Extract full text using PyMuPDF"""
         if not os.path.exists(file_path):
             logger.warning(f"⚠️ PDF not found: {file_path}")
             return ""
@@ -99,37 +99,37 @@ class ParserAgent:
         
         parsed_results = []
         
-        # 使用 tqdm 顯示進度條
+        # Use tqdm to show progress bar
         for paper in tqdm(papers, desc="Parsing PDFs"):
             pdf_path = paper.get('local_pdf_path')
             
-            # 1. 提取原始文字
+            # 1. Extract raw text
             raw_text = self.parse_pdf(pdf_path)
             
             if not raw_text:
                 continue
 
-            # 2. 是否去除參考文獻
+            # 2. Whether to remove references
             if self.config['parser']['ignore_references']:
                 raw_text = self.remove_references(raw_text)
 
-            # 3. 清洗文字
+            # 3. Clean text
             cleaned_text = self.clean_text(raw_text)
 
-            # 4. 分塊
+            # 4. Chunk
             chunks = self.chunk_text(cleaned_text)
 
-            # 5. 建立結構化資料
+            # 5. Create structured data
             parsed_paper = {
                 "id": paper['id'],
                 "title": paper['title'],
-                "chunks": chunks,  # 這裡儲存切分好的文本列表
+                "chunks": chunks,  # Store the chunked text list here
                 "total_chunks": len(chunks),
-                "parsed_at": os.path.getmtime(pdf_path) # 簡單記錄時間
+                "parsed_at": os.path.getmtime(pdf_path) # Simple timestamp
             }
             parsed_results.append(parsed_paper)
 
-        # 儲存結果
+        # Save results
         with open(self.output_path, 'w', encoding='utf-8') as f:
             json.dump(parsed_results, f, ensure_ascii=False, indent=2)
             

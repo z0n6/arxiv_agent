@@ -3,7 +3,7 @@ import axios from 'axios'
 import { BookOpen, RefreshCw, FileText, Download, Sparkles, User, Calendar, Search, ArrowUpDown, Moon, Sun } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
-// 設定 API 網址 (指向 FastAPI)
+// Set API URL (pointing to FastAPI)
 const API_URL = "http://localhost:8001/api";
 
 // ArXiv Category Mapping (English, Extended Version)
@@ -116,38 +116,38 @@ const getCategoryName = (code) => {
 function App() {
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [summaries, setSummaries] = useState({}); // 儲存已生成的摘要
-  const [summarizing, setSummarizing] = useState({}); // 記錄正在生成中的 ID
+  const [summaries, setSummaries] = useState({}); // Store generated summaries
+  const [summarizing, setSummarizing] = useState({}); // Record IDs being generated
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("newest"); // 'newest' | 'oldest'
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [timeRange, setTimeRange] = useState("all"); // 'all', '1d', '7d', '30d'
 
-  // 初始載入
+  // Initial load
   useEffect(() => {
     fetchPapers();
   }, []);
 
   // ==========================================
-  // 🌓 智慧深色模式邏輯 (Smart Dark Mode)
+  // 🌓 Smart Dark Mode Logic
   // ==========================================
   
-  // 1. 定義主題偏好: 'system' | 'light' | 'dark'
-  // 優先讀取 localStorage，如果沒有則預設為 'system'
+  // 1. Define theme preference: 'system' | 'light' | 'dark'
+  // Prioritize reading localStorage, default to 'system' if not present
   const [themePreference, setThemePreference] = useState(() => {
     return localStorage.getItem('theme') || 'system';
   });
 
-  // 2. 監聽系統目前的實際狀態 (True = Dark, False = Light)
+  // 2. Listen to system's current actual state (True = Dark, False = Light)
   const [systemIsDark, setSystemIsDark] = useState(() => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  // 3. 計算最終要顯示的模式
-  // 如果是 'system' 就看系統狀態，否則看使用者設定
+  // 3. Calculate the final mode to display
+  // If 'system', follow system state, otherwise follow user setting
   const isDarkMode = themePreference === 'system' ? systemIsDark : themePreference === 'dark';
 
-  // Effect A: 監聽系統主題變更 (動態跟隨)
+  // Effect A: Listen for system theme changes (dynamic follow)
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
@@ -159,7 +159,7 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Effect B: 將最終結果應用到 HTML class，並儲存設定
+  // Effect B: Apply final result to HTML class and save settings
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -167,15 +167,15 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
     
-    // 只有當不是 system 時才寫入 localStorage，避免覆蓋使用者的「跟隨系統」意願
+    // Only write to localStorage when not 'system', to avoid overriding user's "follow system" preference
     if (themePreference !== 'system') {
       localStorage.setItem('theme', themePreference);
     }
   }, [isDarkMode, themePreference]);
 
-  // 4. 切換處理函式
+  // 4. Toggle handler function
   const toggleTheme = () => {
-    // 邏輯：在 Light/Dark 之間切換，一旦切換就變成手動模式
+    // Logic: Toggle between Light/Dark, once toggled becomes manual mode
     const newTheme = isDarkMode ? 'light' : 'dark';
     setThemePreference(newTheme);
   };
@@ -193,9 +193,9 @@ function App() {
     setLoading(true);
     try {
       await axios.post(`${API_URL}/refresh`);
-      await fetchPapers(); // 重新獲取列表
+      await fetchPapers(); // Re-fetch the list
     } catch (err) {
-      alert("更新失敗: " + err.message);
+      alert("Update failed: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -207,28 +207,28 @@ function App() {
       const res = await axios.post(`${API_URL}/summarize`, { paper_id: id });
       setSummaries(prev => ({ ...prev, [id]: res.data.summary }));
     } catch (err) {
-      alert("摘要生成失敗");
+      alert("Summary generation failed");
     } finally {
       setSummarizing(prev => ({ ...prev, [id]: false }));
     }
   };
 
-  // 動態計算目前資料中所有的分類 (只顯示有的分類，不要顯示空的選項)
+  // Dynamically calculate all categories in current data (only show existing categories, don't show empty options)
   const availableCategories = useMemo(() => {
     const cats = new Set(papers.map(p => p.primary_category));
     return ["All", ...Array.from(cats)];
   }, [papers]);
 
-  // 核心邏輯：過濾與排序
+  // Core logic: filtering and sorting
   const filteredPapers = useMemo(() => {
     let result = [...papers];
 
-    // 分類過濾
+    // Category filtering
     if (selectedCategory !== "All") {
       result = result.filter(paper => paper.primary_category === selectedCategory);
     }
 
-	// 時間過濾
+	// Time filtering
     if (timeRange !== 'all') {
       const now = new Date();
       result = result.filter(paper => {
@@ -243,7 +243,7 @@ function App() {
       });
     }
 
-    // 搜尋過濾 (比對標題、摘要、作者)
+    // Search filtering (match title, abstract, authors)
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
       result = result.filter(paper => 
@@ -253,7 +253,7 @@ function App() {
       );
     }
 
-    // 時間排序
+    // Time sorting
     result.sort((a, b) => {
       const dateA = new Date(a.published);
       const dateB = new Date(b.published);
@@ -276,16 +276,16 @@ function App() {
         </div>
         
         <div className="flex items-center gap-3">
-          {/* ✨ 深色模式切換按鈕 */}
+          {/* ✨ Dark mode toggle button */}
           <button
             onClick={toggleTheme}
             className="p-2.5 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all shadow-sm group relative"
             title={themePreference === 'system' ? "Following System Theme" : "Manual Theme Setting"}
           >
-            {/* 顯示對應圖示 */}
+            {/* Display corresponding icon */}
             {isDarkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             
-            {/* (選用) 如果是跟隨系統，顯示一個小綠點提示 */}
+            {/* (Optional) If following system, show a small green dot indicator */}
             {themePreference === 'system' && (
               <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-green-500 rounded-full"></span>
             )}
@@ -303,18 +303,18 @@ function App() {
       </div>
 
       <div className="mb-8">
-		{/* Row 1: 主搜尋框 (分類改至右側版) */}
+		{/* Row 1: Main search box (category moved to right side) */}
         <div className="relative w-full max-w-3xl mx-auto group">
           
-          {/* 搜尋框容器 */}
+          {/* Search box container */}
           <div className="relative flex items-center bg-white dark:bg-gray-800 rounded-full shadow-md border border-gray-200 dark:bg-gray-700 hover:shadow-lg transition-shadow duration-300 h-12 md:h-14 overflow-hidden">
             
-            {/* 1. 搜尋圖示 (移到最左側) */}
+            {/* 1. Search icon (moved to far left) */}
             <div className="pl-4">
               <Search className="w-5 h-5 text-gray-400" />
             </div>
 
-            {/* 2. 輸入框 (佔滿剩餘空間) */}
+            {/* 2. Input box (fills remaining space) */}
             <input 
               type="text" 
               placeholder="Search title, abstract, or author..." 
@@ -323,7 +323,7 @@ function App() {
               className="flex-1 bg-transparent border-none outline-none px-3 text-gray-700 dark:text-gray-300 placeholder-gray-400 h-full text-base"
             />
             
-            {/* 3. 清除按鈕 (在分類選單之前) */}
+            {/* 3. Clear button (before category menu) */}
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm("")}
@@ -333,15 +333,15 @@ function App() {
               </button>
             )}
 
-            {/* 4. 右側：內嵌分類選單 (偽裝成 Icon) */}
+            {/* 4. Right side: Embedded category menu (disguised as Icon) */}
             <div className="relative pl-4 pr-5 flex items-center border-l border-gray-200 dark:bg-gray-800 h-2/3">
                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors group/cat">
-                  {/* 分類名稱 */}
+                  {/* Category name */}
                   <span className="font-medium text-sm hidden md:block whitespace-nowrap group-hover/cat:text-blue-600">
                     {selectedCategory === "All" ? "All Categories" : selectedCategory}
                   </span>
                   
-                  {/* 手機版顯示圖示 */}
+                  {/* Mobile version displays icon */}
                   <div className="md:hidden">
                     {selectedCategory === "All" ? <BookOpen className="w-5 h-5"/> : <span className="text-xs font-bold">{selectedCategory}</span>}
                   </div>
@@ -349,7 +349,7 @@ function App() {
                   <ArrowUpDown className="w-3 h-3 opacity-50" />
                </div>
                
-               {/* 真正運作的 Select (透明覆蓋) */}
+               {/* Actual working Select (transparent overlay) */}
                <select 
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
@@ -366,20 +366,20 @@ function App() {
           </div>
         </div>
 
-        {/* Row 2: 資訊列與工具 (搜尋結果 + 時間/排序) */}
+        {/* Row 2: Info bar and tools (search results + time/sorting) */}
         <div className="max-w-3xl mx-auto mt-3 px-2 flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm text-gray-500 dark:text-gray-400 gap-2">
           
-          {/* 左側：結果統計 */}
+          {/* Left side: Result statistics */}
           <div className="flex items-center gap-1">
              <span className="font-medium text-gray-700 dark:text-gray-300">{filteredPapers.length}</span> 
              <span>results found</span>
              {timeRange !== 'all' && <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">Past {timeRange}</span>}
           </div>
 
-          {/* 右側：篩選工具 (類似 Google 的 Tools) */}
+          {/* Right side: Filter tools (similar to Google's Tools) */}
           <div className="flex items-center gap-4">
             
-            {/* 時間篩選 */}
+            {/* Time filtering */}
             <div className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition">
                <span className="text-xs font-medium">Time:</span>
                <select 
@@ -394,7 +394,7 @@ function App() {
                </select>
             </div>
 
-            {/* 排序切換 */}
+            {/* Sorting toggle */}
             <button 
               onClick={() => setSortOrder(prev => prev === "newest" ? "oldest" : "newest")}
               className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition"
@@ -416,7 +416,7 @@ function App() {
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className="p-7">
-              {/* 1. Metadata 標籤區 */}
+              {/* 1. Metadata tag area */}
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 <span className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-full text-xs font-bold border border-purple-100 dark:border-purple-800">
                   {getCategoryName(paper.primary_category)}
@@ -434,12 +434,12 @@ function App() {
                 </span>
               </div>
 
-              {/* 2. 標題 */}
+              {/* 2. Title */}
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3 leading-tight group-hover:text-blue-600 transition-colors">
                 {paper.title}
               </h2>
 
-              {/* 3. 原始摘要區 (Abstract) */}
+              {/* 3. Original abstract area (Abstract) */}
               <div className="mt-6">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-gray-400" /> Original Abstract
@@ -449,10 +449,10 @@ function App() {
                 </p>
               </div>
 
-              {/* ✨ 4. AI 摘要顯示區 (移到這裡：在摘要下方、按鈕上方) */}
+              {/* ✨ 4. AI summary display area (moved here: below abstract, above buttons) */}
               {summaries[paper.id] && (
                 <div className="mt-6 animate-fade-in">
-                  {/* 標題 */}
+                  {/* Title */}
                   <div className="flex items-center justify-between gap-2 text-emerald-700 dark:text-emerald-400 font-bold mb-3">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-5 h-5" />
@@ -461,7 +461,7 @@ function App() {
                     <span className="text-xs font-normal text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full">Generated by Local LLM</span>
                   </div>
                   
-                  {/* Markdown 內容容器 (已修正 className 問題) */}
+                  {/* Markdown content container (className issue fixed) */}
                   <div className="bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl p-6 border border-emerald-100/50 dark:border-emerald-800/50 prose prose-sm prose-emerald dark:prose-invert max-w-none leading-relaxed">
                     <ReactMarkdown 
                       components={{
@@ -475,7 +475,7 @@ function App() {
                 </div>
               )}
 
-              {/* ✨ 5. Loading 骨架屏 (也移到這裡，保持位置一致) */}
+              {/* ✨ 5. Loading skeleton screen (also moved here, to keep position consistent) */}
               {summarizing[paper.id] && !summaries[paper.id] && (
                 <div className="mt-6 space-y-4 w-full animate-fade-in">
                   <div className="flex items-center gap-2 text-blue-600 text-sm font-medium animate-pulse mb-3">
@@ -488,10 +488,10 @@ function App() {
                 </div>
               )}
 
-              {/* 6. 行動區塊 (Download & Button) - 放在最下方，並加上分隔線 */}
+              {/* 6. Action block (Download & Button) - placed at bottom, with separator line */}
               <div className="mt-8 pt-5 border-t border-gray-100 dark:bg-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
                 
-                {/* 左側：下載連結 */}
+                {/* Left side: Download link */}
                 <a 
                   href={paper.pdf_url} 
                   target="_blank" 
@@ -502,7 +502,7 @@ function App() {
                   Download Source PDF
                 </a>
 
-                {/* 右側：AI 按鈕 (只在尚未生成時顯示) */}
+                {/* Right side: AI button (only shown when not yet generated) */}
                 {!summaries[paper.id] && (
                   <button 
                     onClick={() => handleSummarize(paper.id)}

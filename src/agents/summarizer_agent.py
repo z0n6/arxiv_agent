@@ -5,7 +5,7 @@ import ollama
 from loguru import logger
 from typing import Dict, Any, List
 
-# 引入 VectorAgent 以便進行 RAG 檢索
+# Import VectorAgent for RAG retrieval
 from agents.vector_agent import VectorAgent
 
 class SummarizerAgent:
@@ -14,7 +14,7 @@ class SummarizerAgent:
         self.data_dir = self.config['data']['output_dir']
         self.metadata_path = os.path.join(self.data_dir, self.config['data']['metadata_file'])
         
-        # 初始化 Vector Agent 用於檢索
+        # Initialize Vector Agent for retrieval
         self.vector_agent = VectorAgent(config_path)
         
         self.model = self.config['summarizer']['model_name']
@@ -31,9 +31,9 @@ class SummarizerAgent:
             return json.load(f)
 
     def generate_summary(self, paper_id: str, mode: str = "quick_summary") -> str:
-        """生成指定論文的摘要"""
+        """Generate summary for specified paper"""
         
-        # 1. 獲取基本資訊
+        # 1. Get basic information
         papers = self._load_metadata()
         target_paper = next((p for p in papers if p['id'] == paper_id), None)
         
@@ -44,17 +44,17 @@ class SummarizerAgent:
         title = target_paper['title']
         abstract = target_paper['summary']
         
-        # 2. RAG 檢索：找出這篇論文中關於 "methodology" 和 "conclusion" 的片段
-        # 注意：這裡我們簡單地用標題+關鍵字去搜，實際應用可能需要 filter by paper_id (FAISS 進階用法)
-        # 為簡化原型，我們先假設搜尋到的內容大部分相關，或者僅使用 Abstract + 前幾個 Chunk
+        # 2. RAG retrieval: find excerpts about "methodology" and "conclusion" in this paper
+        # Note: here we simply search with title + keywords, real application may need to filter by paper_id (advanced FAISS usage)
+        # To simplify the prototype, we assume most searched content is relevant, or only use Abstract + first few chunks
         
-        # 策略：組合 Abstract + 意搜尋到的補充資訊
+        # Strategy: combine Abstract + supplementary information from search
         context_query = f"{title} methodology and conclusion"
         rag_results = self.vector_agent.search(context_query, top_k=3)
         rag_text = "\n".join([res['text'] for res in rag_results])
         
-        # 3. 構建 Prompt
-        # 組合內容：標題 + 摘要 + RAG 檢索到的內文
+        # 3. Build Prompt
+        # Combine content: title + abstract + RAG retrieved content
         full_context = f"Title: {title}\nAbstract: {abstract}\nKey Excerpts:\n{rag_text}"
         
         # 讀取模板
@@ -65,7 +65,7 @@ class SummarizerAgent:
 
         logger.info(f"🤖 Sending request to Ollama ({mode})...")
 
-        # 4. 呼叫 Ollama
+        # 4. Call Ollama
         try:
             response = ollama.chat(model=self.model, messages=[
                 {'role': 'system', 'content': system_prompt},
@@ -79,7 +79,7 @@ class SummarizerAgent:
             return f"Generation Error: {e}"
 
 if __name__ == "__main__":
-    # 測試用：直接跑第一篇論文
+    # For testing: run the first paper directly
     agent = SummarizerAgent()
     papers = agent._load_metadata()
     if papers:

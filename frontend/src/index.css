@@ -7,12 +7,12 @@
 body {
   font-family: 'Inter', sans-serif;
   @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300;
-  /*background-color: #f3f4f6; [> 更有質感的淺灰 <]*/
+  /*background-color: #f3f4f6; [> More textured light gray <]*/
   /*color: #1f2937;*/
-  -webkit-font-smoothing: antialiased; /* 讓字體更清晰 */
+  -webkit-font-smoothing: antialiased; /* Make fonts clearer */
 }
 
-/* 自定義捲軸 */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -24,7 +24,7 @@ body {
   border-radius: 20px;
 }
 
-/* 簡單的淡入動畫 */
+/* Simple fade-in animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -33,7 +33,7 @@ body {
   animation: fadeIn 0.4s ease-out forwards;
 }
 
-/* 骨架屏動畫 (Loading Shimmer) */
+/* Skeleton screen animation (Loading Shimmer) */
 @keyframes shimmer {
   0% { background-position: -1000px 0; }
   100% { background-position: 1000px 0; }

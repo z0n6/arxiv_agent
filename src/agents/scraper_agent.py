@@ -14,7 +14,7 @@ class ScraperAgent:
         self.pdf_dir = os.path.join(self.data_dir, self.config['data']['pdf_dir'])
         self.metadata_path = os.path.join(self.data_dir, self.config['data']['metadata_file'])
         
-        # 確保目錄存在
+        # Ensure directory exists
         os.makedirs(self.pdf_dir, exist_ok=True)
         
         logger.info("🕵️ Scraper Agent initialized.")
@@ -24,7 +24,7 @@ class ScraperAgent:
             return yaml.safe_load(f)
 
     def _get_existing_ids(self) -> List[str]:
-        """讀取已存在的論文 ID，用於增量更新"""
+        """Read existing paper IDs for incremental updates"""
         if not os.path.exists(self.metadata_path):
             return []
         try:
@@ -35,7 +35,7 @@ class ScraperAgent:
             return []
 
     def _save_metadata(self, new_data: List[Dict]):
-        """將新資料追加到 metadata.json"""
+        """Append new data to metadata.json"""
         existing_data = []
         if os.path.exists(self.metadata_path):
             try:
@@ -44,9 +44,9 @@ class ScraperAgent:
             except json.JSONDecodeError:
                 pass
         
-        # 合併並去重 (以 ID 為準)
+        # Merge and deduplicate (based on ID)
         all_data = existing_data + new_data
-        # 簡單去重邏輯
+        # Simple deduplication logic
         seen = set()
         unique_data = []
         for d in all_data:
@@ -59,10 +59,10 @@ class ScraperAgent:
         logger.success(f"💾 Metadata saved. Total papers: {len(unique_data)}")
 
     def download_pdf(self, url: str, filename: str) -> bool:
-        """下載 PDF 並包含重試機制"""
+        """Download PDF with retry mechanism"""
         filepath = os.path.join(self.pdf_dir, filename)
         
-        # 增量檢查：如果檔案已存在且大小不為 0，跳過
+        # Incremental check: if file exists and size > 0, skip
         if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
             logger.info(f"⏭️  File exists, skipping: {filename}")
             return True
@@ -85,13 +85,13 @@ class ScraperAgent:
         return False
 
     def run(self):
-        """執行主流程"""
+        """Execute main process"""
         keywords = self.config['scraper']['keywords']
         max_results = self.config['scraper']['max_results']
         
         logger.info(f"🔍 Starting search for: {keywords}")
         
-        # 構建查詢語法 (Title OR Abstract)
+        # Build query syntax (Title OR Abstract)
         query = " OR ".join([f'ti:"{k}" OR abs:"{k}"' for k in keywords])
         
         client = arxiv.Client()
@@ -103,7 +103,7 @@ class ScraperAgent:
 
         new_papers = []
         
-        # 開始抓取
+        # Start scraping
         for result in client.results(search):
             paper_id = result.get_short_id()
             filename = f"{paper_id}.pdf"
@@ -122,11 +122,11 @@ class ScraperAgent:
 
             logger.info(f"📄 Found: {result.title[:50]}...")
             
-            # 下載 PDF
+            # Download PDF
             if self.download_pdf(result.pdf_url, filename):
                 new_papers.append(paper_info)
         
-        # 儲存 Metadata
+        # Save Metadata
         if new_papers:
             self._save_metadata(new_papers)
             logger.success(f"✅ Scraper Agent finished. Processed {len(new_papers)} papers.")
@@ -134,6 +134,6 @@ class ScraperAgent:
             logger.info("🤷 No new papers downloaded.")
 
 if __name__ == "__main__":
-    # 單獨測試用
+    # For standalone testing
     agent = ScraperAgent()
     agent.run()
