@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import { BookOpen, RefreshCw, FileText, Download, Sparkles, User, Calendar, Search, ArrowUpDown } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 // 設定 API 網址 (指向 FastAPI)
 const API_URL = "http://localhost:8001/api";
@@ -120,6 +121,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("newest"); // 'newest' | 'oldest'
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [timeRange, setTimeRange] = useState("all"); // 'all', '1d', '7d', '30d'
 
   // 初始載入
   useEffect(() => {
@@ -169,12 +171,27 @@ function App() {
   const filteredPapers = useMemo(() => {
     let result = [...papers];
 
-    // 1. 分類過濾
+    // 分類過濾
     if (selectedCategory !== "All") {
       result = result.filter(paper => paper.primary_category === selectedCategory);
     }
 
-    // 2. 搜尋過濾 (比對標題、摘要、作者)
+	// 時間過濾
+    if (timeRange !== 'all') {
+      const now = new Date();
+      result = result.filter(paper => {
+        const pubDate = new Date(paper.published);
+        const diffTime = Math.abs(now - pubDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        if (timeRange === '1d') return diffDays <= 1;
+        if (timeRange === '7d') return diffDays <= 7;
+        if (timeRange === '30d') return diffDays <= 30;
+        return true;
+      });
+    }
+
+    // 搜尋過濾 (比對標題、摘要、作者)
     if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
       result = result.filter(paper => 
@@ -184,7 +201,7 @@ function App() {
       );
     }
 
-    // 3. 時間排序
+    // 時間排序
     result.sort((a, b) => {
       const dateA = new Date(a.published);
       const dateB = new Date(b.published);
@@ -192,93 +209,129 @@ function App() {
     });
 
     return result;
-  }, [papers, searchTerm, sortOrder, selectedCategory]);
+  }, [papers, searchTerm, sortOrder, selectedCategory, timeRange]);
 
   return (
     <div className="min-h-screen p-8 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-10">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <BookOpen className="w-8 h-8 text-blue-600" />
-            ArXiv Agent
-          </h1>
-          <p className="text-gray-500 mt-2">基於 Multi-Agent 的學術論文自動化助理</p>
-        </div>
-        <button 
-          onClick={handleRefresh}
-          disabled={loading}
-          className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? "系統更新中..." : "執行抓取與分析"}
-        </button>
-      </div>
-
-      {/* 工具列區塊 */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="mb-8">
         
-        {/* 左側：分類篩選 + 搜尋框 */}
-        <div className="flex flex-col md:flex-row gap-3 w-full md:w-2/3">
+		{/* Row 1: 主搜尋框 (分類改至右側版) */}
+        <div className="relative w-full max-w-3xl mx-auto group">
           
-          {/* ✨ 分類下拉選單 */}
-          <div className="relative min-w-[160px]">
-            <select 
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full appearance-none pl-4 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium text-gray-700 cursor-pointer"
-            >
-              {availableCategories.map(cat => (
-                <option key={cat} value={cat}>
-                  {cat === "All" ? "所有領域 (All)" : getCategoryName(cat)}
-                </option>
-              ))}
-            </select>
-            {/* 自訂箭頭圖示 */}
-            <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
-  
-          {/* 搜尋框 */}
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          {/* 搜尋框容器 */}
+          <div className="relative flex items-center bg-white rounded-full shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300 h-12 md:h-14">
+            
+            {/* 1. 搜尋圖示 (移到最左側) */}
+            <div className="pl-4">
+              <Search className="w-5 h-5 text-gray-400" />
+            </div>
+
+            {/* 2. 輸入框 (佔滿剩餘空間) */}
             <input 
               type="text" 
-              placeholder="搜尋標題、作者或關鍵字..." 
+              placeholder="搜尋論文標題、摘要或作者..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+              className="flex-1 bg-transparent border-none outline-none px-3 text-gray-700 placeholder-gray-400 h-full text-base"
             />
-          </div>
-  
-          {/* 排序與統計 */}
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <span className="text-sm text-gray-500 whitespace-nowrap">
-              共 {filteredPapers.length} 篇論文
-            </span>
             
+            {/* 3. 清除按鈕 (在分類選單之前) */}
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm("")}
+                className="mr-3 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+              >
+                ✕
+              </button>
+            )}
+
+            {/* 4. 右側：內嵌分類選單 (偽裝成 Icon) */}
+            <div className="relative pl-4 pr-5 flex items-center border-l border-gray-200 h-2/3">
+               <div className="flex items-center gap-2 text-gray-500 cursor-pointer hover:text-blue-600 transition-colors group/cat">
+                  {/* 分類名稱 */}
+                  <span className="font-medium text-sm hidden md:block whitespace-nowrap group-hover/cat:text-blue-600">
+                    {selectedCategory === "All" ? "所有分類" : selectedCategory}
+                  </span>
+                  
+                  {/* 手機版顯示圖示 */}
+                  <div className="md:hidden">
+                    {selectedCategory === "All" ? <BookOpen className="w-5 h-5"/> : <span className="text-xs font-bold">{selectedCategory}</span>}
+                  </div>
+                  
+                  <ArrowUpDown className="w-3 h-3 opacity-50" />
+               </div>
+               
+               {/* 真正運作的 Select (透明覆蓋) */}
+               <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+               >
+                  {availableCategories.map(cat => (
+                    <option key={cat} value={cat}>
+                      {cat === "All" ? "所有分類" : getCategoryName(cat)}
+                    </option>
+                  ))}
+               </select>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Row 2: 資訊列與工具 (搜尋結果 + 時間/排序) */}
+        <div className="max-w-3xl mx-auto mt-3 px-2 flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm text-gray-500 gap-2">
+          
+          {/* 左側：結果統計 */}
+          <div className="flex items-center gap-1">
+             <span className="font-medium text-gray-700">{filteredPapers.length}</span> 
+             <span>results found</span>
+             {timeRange !== 'all' && <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">Past {timeRange}</span>}
+          </div>
+
+          {/* 右側：篩選工具 (類似 Google 的 Tools) */}
+          <div className="flex items-center gap-4">
+            
+            {/* 時間篩選 */}
+            <div className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition">
+               <span className="text-xs font-medium">時間:</span>
+               <select 
+                 value={timeRange}
+                 onChange={(e) => setTimeRange(e.target.value)}
+                 className="bg-transparent border-none outline-none cursor-pointer hover:text-blue-600"
+               >
+                 <option value="all">不限時間</option>
+                 <option value="1d">過去 24 小時</option>
+                 <option value="7d">過 1 週</option>
+                 <option value="30d">過去 1 個月</option>
+               </select>
+            </div>
+
+            {/* 排序切換 */}
             <button 
               onClick={() => setSortOrder(prev => prev === "newest" ? "oldest" : "newest")}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors whitespace-nowrap"
+              className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition"
             >
-              <ArrowUpDown className="w-4 h-4" />
-              {sortOrder === "newest" ? "最新優先" : "最舊優先"}
+               <ArrowUpDown className="w-3 h-3" />
+               <span>{sortOrder === "newest" ? "最新優先" : "最舊優先"}</span>
             </button>
           </div>
-		</div>
+
+        </div>
       </div>
 
       {/* Paper List */}
       <div className="space-y-6">
         {filteredPapers.map((paper, index) => (
-          <div key={paper.id} 
+		  <div 
+            key={paper.id} 
             className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-fade-in"
-            style={{ animationDelay: `${index * 100}ms` }} // 讓卡片一張張依序浮現
+            style={{ animationDelay: `${index * 100}ms` }}
           >
-            
             <div className="p-7">
-              {/* 頂部 Metadata 標籤區 */}
+              {/* 1. Metadata 標籤區 */}
               <div className="flex flex-wrap items-center gap-2 mb-4">
-				<span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full text-xs font-bold border border-purple-100">
+                <span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full text-xs font-bold border border-purple-100">
                   {getCategoryName(paper.primary_category)}
                 </span>
                 <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide">
@@ -294,75 +347,100 @@ function App() {
                 </span>
               </div>
 
-              {/* 標題 */}
+              {/* 2. 標題 */}
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 leading-tight group-hover:text-blue-600 transition-colors">
                 {paper.title}
               </h2>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
-                
-                {/* 左側：摘要與連結 */}
-                <div className="lg:col-span-2 flex flex-col justify-between">
-                  <p className="text-gray-600 leading-relaxed text-sm line-clamp-4">
-                    {paper.summary}
-                  </p>
+              {/* 3. 原始摘要區 (Abstract) */}
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-gray-400" /> Original Abstract
+                </h3>
+                <p className="text-gray-600 leading-relaxed text-sm line-clamp-4 hover:line-clamp-none transition-all cursor-pointer">
+                  {paper.summary}
+                </p>
+              </div>
+
+              {/* ✨ 4. AI 摘要顯示區 (移到這裡：在摘要下方、按鈕上方) */}
+              {summaries[paper.id] && (
+                <div className="mt-6 animate-fade-in">
+                  {/* 標題 */}
+                  <div className="flex items-center justify-between gap-2 text-emerald-700 font-bold mb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5" />
+                      AI 重點歸納
+                    </div>
+                    <span className="text-xs font-normal text-emerald-500 bg-emerald-50 px-2 py-1 rounded-full">Generated by Local LLM</span>
+                  </div>
                   
-                  <div className="mt-5 pt-5 border-t border-gray-100">
-                    <a 
-                      href={paper.pdf_url} 
-                      target="_blank" 
-                      rel="noreferrer" 
-                      className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors"
+                  {/* Markdown 內容容器 (已修正 className 問題) */}
+                  <div className="bg-emerald-50/50 rounded-xl p-6 border border-emerald-100/50 prose prose-sm prose-emerald max-w-none leading-relaxed">
+                    <ReactMarkdown 
+                      components={{
+                        strong: ({node, ...props}) => <span className="font-bold text-emerald-800" {...props} />,
+                        li: ({node, ...props}) => <li className="marker:text-emerald-400" {...props} />
+                      }}
                     >
-                      <Download className="w-4 h-4" />
-                      Download PDF
-                    </a>
+                      {summaries[paper.id]}
+                    </ReactMarkdown>
                   </div>
                 </div>
+              )}
 
-                {/* 右側：AI 動作區 */}
-                <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex flex-col justify-center min-h-[160px]">
-                  {!summaries[paper.id] ? (
-                    summarizing[paper.id] ? (
-                      // === 骨架屏 (Loading 狀態) ===
-                      <div className="space-y-3 w-full">
-                        <div className="flex items-center gap-2 text-blue-600 text-sm font-medium animate-pulse mb-2">
-                           <Sparkles className="w-4 h-4" /> AI 正在閱讀...
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded skeleton w-3/4"></div>
-                        <div className="h-2 bg-gray-200 rounded skeleton w-full"></div>
-                        <div className="h-2 bg-gray-200 rounded skeleton w-5/6"></div>
-                      </div>
-                    ) : (
-                      // === 初始狀態按鈕 ===
-                      <div className="text-center">
-                        <button 
-                          onClick={() => handleSummarize(paper.id)}
-                          className="w-full py-3 px-4 bg-white hover:bg-blue-600 text-gray-700 hover:text-white border border-gray-200 hover:border-transparent rounded-lg text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow flex items-center justify-center gap-2 group/btn"
-                        >
-                          <Sparkles className="w-4 h-4 text-blue-500 group-hover/btn:text-white transition-colors" /> 
-                          生成重點摘要
-                        </button>
-                        <p className="text-xs text-gray-400 mt-3">
-                          由 Local LLM 分析全文架構
-                        </p>
-                      </div>
-                    )
-                  ) : (
-                    // === 摘要結果 ===
-                    <div className="animate-fade-in">
-                      <div className="flex items-center gap-2 text-emerald-700 font-bold mb-3 text-sm border-b border-emerald-100 pb-2">
-                        <Sparkles className="w-4 h-4" />
-                        AI 重點歸納
-                      </div>
-                      <div className="text-sm text-slate-700 whitespace-pre-line leading-7 tracking-wide">
-                        {summaries[paper.id]}
-                      </div>
-                    </div>
-                  )}
+              {/* ✨ 5. Loading 骨架屏 (也移到這裡，保持位置一致) */}
+              {summarizing[paper.id] && !summaries[paper.id] && (
+                <div className="mt-6 space-y-4 w-full animate-fade-in">
+                  <div className="flex items-center gap-2 text-blue-600 text-sm font-medium animate-pulse mb-3">
+                      <Sparkles className="w-4 h-4" /> AI 正在閱讀並分析全文架構...
+                  </div>
+                  <div className="h-3 bg-gray-200 rounded-full skeleton w-1/4"></div>
+                  <div className="h-2 bg-gray-100 rounded-full skeleton w-full"></div>
+                  <div className="h-2 bg-gray-100 rounded-full skeleton w-11/12"></div>
+                  <div className="h-2 bg-gray-100 rounded-full skeleton w-3/4"></div>
                 </div>
+              )}
 
+              {/* 6. 行動區塊 (Download & Button) - 放在最下方，並加上分隔線 */}
+              <div className="mt-8 pt-5 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                
+                {/* 左側：下載連結 */}
+                <a 
+                  href={paper.pdf_url} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Source PDF
+                </a>
+
+                {/* 右側：AI 按鈕 (只在尚未生成時顯示) */}
+                {!summaries[paper.id] && (
+                  <button 
+                    onClick={() => handleSummarize(paper.id)}
+                    disabled={summarizing[paper.id]}
+                    className={`
+                      inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow
+                      ${summarizing[paper.id] 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-blue-600 hover:bg-blue-700 text-white group/btn'}
+                    `}
+                  >
+                    {summarizing[paper.id] ? (
+                       <>
+                         <RefreshCw className="w-4 h-4 animate-spin" /> Generating...
+                       </>
+                    ) : (
+                       <>
+                         <Sparkles className="w-4 h-4 text-blue-200 group-hover/btn:text-white transition-colors" /> 
+                         生成 AI 重點導讀
+                       </>
+                    )}
+                  </button>
+                )}
               </div>
+
             </div>
           </div>
         ))}
