@@ -40,6 +40,7 @@ class PaperResponse(BaseModel):
     published: str
     summary: str
     pdf_url: str
+    primary_category: str
 
 class SummaryRequest(BaseModel):
     paper_id: str

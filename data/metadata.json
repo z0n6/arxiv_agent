@@ -20,11 +20,12 @@
       "Jan Kautz",
       "Pavlo Molchanov"
     ],
+    "primary_category": "cs.CL",
     "summary": "Large language models are powerful generalists, yet solving deep and complex problems such as those of the Humanity's Last Exam (HLE) remains both conceptually challenging and computationally expensive. We show that small orchestrators managing other models and a variety of tools can both push the upper bound of intelligence and improve efficiency in solving difficult agentic tasks. We introduce ToolOrchestra, a method for training small orchestrators that coordinate intelligent tools. ToolOrchestra explicitly uses reinforcement learning with outcome-, efficiency-, and user-preference-aware rewards. Using ToolOrchestra, we produce Orchestrator, an 8B model that achieves higher accuracy at lower cost than previous tool-use agents while aligning with user preferences on which tools are to be used for a given query. On HLE, Orchestrator achieves a score of 37.1%, outperforming GPT-5 (35.1%) while being 2.5x more efficient. On tau2-Bench and FRAMES, Orchestrator surpasses GPT-5 by a wide margin while using only about 30% of the cost. Extensive analysis shows that Orchestrator achieves the best trade-off between performance and cost under multiple metrics, and generalizes robustly to unseen tools. These results demonstrate that composing diverse tools with a lightweight orchestration model is both more efficient and more effective than existing methods, paving the way for practical and scalable tool-augmented reasoning systems.",
     "published": "2025-11-26 18:59:46+00:00",
     "pdf_url": "https://arxiv.org/pdf/2511.21689v1",
     "local_pdf_path": "./data/pdfs/2511.21689v1.pdf",
-    "crawled_at": "2025-11-28 21:04:26"
+    "crawled_at": "2025-11-30 14:11:10"
   },
   {
     "id": "2511.21686v1",
@@ -46,11 +47,12 @@
       "Carole-Jean Wu",
       "Shang-Wen Li"
     ],
+    "primary_category": "cs.CL",
     "summary": "Synthetic data has become increasingly important for training large language models, especially when real data is scarce, expensive, or privacy-sensitive. Many such generation tasks require coordinated multi-agent workflows, where specialized agents collaborate to produce data that is higher quality, more diverse, and structurally richer. However, existing frameworks for multi-agent synthesis often depend on a centralized orchestrator, creating scalability bottlenecks, or are hardcoded for specific domains, limiting flexibility. We present \\textbf{Matrix}, a decentralized framework that represents both control and data flow as serialized messages passed through distributed queues. This peer-to-peer design eliminates the central orchestrator. Each task progresses independently through lightweight agents, while compute-intensive operations, such as LLM inference or containerized environments, are handled by distributed services. Built on Ray, Matrix scales to tens of thousands of concurrent agentic workflows and provides a modular, configurable design that enables easy adaptation to a wide range of data generation workflows. We evaluate Matrix across diverse synthesis scenarios, such as multi-agent collaborative dialogue, web-based reasoning data extraction, and tool-use trajectory generation in customer service environments. In all cases, Matrix achieves $2$--$15\\times$ higher data generation throughput under identical hardware resources, without compromising output quality.",
     "published": "2025-11-26 18:59:28+00:00",
     "pdf_url": "https://arxiv.org/pdf/2511.21686v1",
     "local_pdf_path": "./data/pdfs/2511.21686v1.pdf",
-    "crawled_at": "2025-11-28 21:04:29"
+    "crawled_at": "2025-11-30 14:11:10"
   },
   {
     "id": "2511.21638v1",
@@ -62,45 +64,11 @@
       "Rémi Munos",
       "Tyler Lu"
     ],
+    "primary_category": "cs.LG",
     "summary": "Optimizing large language models (LLMs) for multi-turn conversational outcomes remains a significant challenge, especially in goal-oriented settings like AI marketing or sales agents who facilitate transactions via messaging platforms. The difficulty stems from sparse, long-horizon rewards and the discrepancy between response-level planning and token-level generation. In this technical note, we propose a formal reduction of the multi-turn RL problem into a sequence of single-turn RLHF-style problems. This is achieved by setting a learned multi-turn Q-function as the reward model for the single-turn problem. We demonstrate and prove a key insight: solving this single-turn RL problem with standard token-level PPO is equivalent to a policy improvement step within the multi-turn problem. This insight naturally leads to Iterative PPO, a batch online policy iteration algorithm that alternates between fitting Q-functions from logged conversation trajectories and improving the policy. A major practical advantage is that Iterative PPO directly leverages stable, off-the-shelf single-turn RLHF tools, making it straightforward to implement. Our method occupies a middle ground between fully online and fully offline approaches, retaining the adaptability of online updates while gaining the stability benefits of offline training.",
     "published": "2025-11-26 18:12:16+00:00",
     "pdf_url": "https://arxiv.org/pdf/2511.21638v1",
     "local_pdf_path": "./data/pdfs/2511.21638v1.pdf",
-    "crawled_at": "2025-11-28 21:04:31"
-  },
-  {
-    "id": "2511.21572v1",
-    "title": "BAMAS: Structuring Budget-Aware Multi-Agent Systems",
-    "authors": [
-      "Liming Yang",
-      "Junyu Luo",
-      "Xuanzhe Liu",
-      "Yiling Lou",
-      "Zhenpeng Chen"
-    ],
-    "summary": "Large language model (LLM)-based multi-agent systems have emerged as a powerful paradigm for enabling autonomous agents to solve complex tasks. As these systems scale in complexity, cost becomes an important consideration for practical deployment. However, existing work rarely addresses how to structure multi-agent systems under explicit budget constraints. In this paper, we propose BAMAS, a novel approach for building multi-agent systems with budget awareness. BAMAS first selects an optimal set of LLMs by formulating and solving an Integer Linear Programming problem that balances performance and cost. It then determines how these LLMs should collaborate by leveraging a reinforcement learning-based method to select the interaction topology. Finally, the system is instantiated and executed based on the selected agents and their collaboration topology. We evaluate BAMAS on three representative tasks and compare it with state-of-the-art agent construction methods. Results show that BAMAS achieves comparable performance while reducing cost by up to 86%.",
-    "published": "2025-11-26 16:48:18+00:00",
-    "pdf_url": "https://arxiv.org/pdf/2511.21572v1",
-    "local_pdf_path": "./data/pdfs/2511.21572v1.pdf",
-    "crawled_at": "2025-11-28 21:04:33"
-  },
-  {
-    "id": "2511.21510v1",
-    "title": "Tool-RoCo: An Agent-as-Tool Self-organization Large Language Model Benchmark in Multi-robot Cooperation",
-    "authors": [
-      "Ke Zhang",
-      "Xiaoning Zhao",
-      "Ce Zheng",
-      "Jiahong Ning",
-      "Dandan Zhu",
-      "Wenqi Zhang",
-      "Chen Sun",
-      "Toshiharu Sugawara"
-    ],
-    "summary": "This study proposes Tool-RoCo, a novel benchmark for evaluating large language models (LLMs) in long-term multi-agent cooperation based on RoCo, a multi-robot cooperative benchmark. Recent research on LLM-based multi-agent systems has relied on predefined orchestration, while ignoring agent autonomy. Tool-RoCo treats other agents as tools and introduces cooperative tools, leveraging tool usage to evaluate multi-agent cooperation and self-organization. Tool usage means that each agent (LLM) selects a tool from a candidate set based on the current state, receives feedback, and adjusts its selection in subsequent rounds. To evaluate different autonomy levels, we propose four LLM paradigms: (1) centralized cooperation, where a single LLM allocates tools to all agents; (2) centralized self-organization, where a central LLM autonomously activates agents while keeping others inactive; (3) decentralized cooperation, where each agent has its own LLM and calls tools based on local information; and (4) self-organization, where a randomly chosen initial agent can request collaboration, activating additional agents via tool calls. Tool-RoCo includes three multi-robot tasks, SORT, PACK, and CABINET, to measure format and parameter accuracy and agent coordination through tool usage. The results using several LLMs showed that cooperative tools accounted for only 7.09% of all tools, indicating that LLM-based agents rarely invoked others as assistants. Moreover, activation tools accounted for 96.42%, suggesting that current LLMs tend to maintain active agents while seldom deactivating them for adaptive coordination. Tool-RoCo provides a systematic benchmark to evaluate LLM autonomy and cooperation in multi-agent tasks. Code and Demo: https://github.com/ColaZhang22/Tool-Roco",
-    "published": "2025-11-26 15:45:33+00:00",
-    "pdf_url": "https://arxiv.org/pdf/2511.21510v1",
-    "local_pdf_path": "./data/pdfs/2511.21510v1.pdf",
-    "crawled_at": "2025-11-28 21:04:36"
+    "crawled_at": "2025-11-30 14:11:10"
   }
 ]

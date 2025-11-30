@@ -112,6 +112,7 @@ class ScraperAgent:
                 "id": paper_id,
                 "title": result.title,
                 "authors": [author.name for author in result.authors],
+                "primary_category": result.primary_category,
                 "summary": result.summary,
                 "published": str(result.published),
                 "pdf_url": result.pdf_url,
