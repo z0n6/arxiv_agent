@@ -11,10 +11,11 @@ from agents.scraper_agent import ScraperAgent
 from agents.parser_agent import ParserAgent
 from agents.vector_agent import VectorAgent
 from agents.summarizer_agent import SummarizerAgent
+from agents.chat_agent import ChatAgent
 
 app = FastAPI(title="ArXiv Agent API")
 
-# Allow cross-origin requests (because React runs on localhost:5173, API on localhost:8000)
+# Allow cross-origin requests (because React runs on localhost:5173, API on localhost:8001)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,6 +31,7 @@ def load_config():
 
 config = load_config()
 summarizer_agent = SummarizerAgent()
+chat_agent = ChatAgent()
 # Scraper/Parser/Vector run on demand, not pre-loaded to save resources
 
 # --- Pydantic Models (define data formats) ---
@@ -45,6 +47,12 @@ class PaperResponse(BaseModel):
 class SummaryRequest(BaseModel):
     paper_id: str
     mode: str = "quick_summary"
+
+class ChatRequest(BaseModel):
+    paper_id: str
+    paper_title: str
+    query: str
+    history: List[dict] = []
 
 # --- API Endpoints ---
 
@@ -78,6 +86,22 @@ def generate_summary(req: SummaryRequest):
     try:
         result = summarizer_agent.generate_summary(req.paper_id, mode=req.mode)
         return {"paper_id": req.paper_id, "summary": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/chat")
+def chat_with_paper(req: ChatRequest):
+    """
+    Interactive chat endpoint for a specific paper.
+    """
+    try:
+        response = chat_agent.chat(
+            paper_id=req.paper_id,
+            paper_title=req.paper_title,
+            query=req.query,
+            history=req.history
+        )
+        return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

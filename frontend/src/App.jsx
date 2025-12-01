@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
-import { BookOpen, RefreshCw, FileText, Download, Sparkles, User, Calendar, Search, ArrowUpDown, ChevronDown, ChevronUp, Moon, Sun } from 'lucide-react'
+import { BookOpen, RefreshCw, FileText, Download, Sparkles, User, Calendar, Search, ArrowUpDown, ChevronDown, ChevronUp, Moon, Sun, MessageSquareText } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import ChatModal from './components/ChatModal';
 
 // Set API URL (pointing to FastAPI)
 const API_URL = "http://localhost:8001/api";
@@ -117,7 +118,7 @@ const getCategoryName = (code) => {
 // 🧩 PaperCard Component
 // Handles individual paper display and expansion logic
 // ==========================================
-const PaperCard = ({ paper, index, summary, isSummarizing, onSummarize }) => {
+const PaperCard = ({ paper, index, summary, isSummarizing, onSummarize, onChat }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Helper to handle click propagation
@@ -232,32 +233,45 @@ const PaperCard = ({ paper, index, summary, isSummarizing, onSummarize }) => {
                 Download Source PDF
               </a>
 
-              {!summary && (
-                <button 
+			  <div className="flex items-center gap-3">
+  			    <button
                   onClick={(e) => {
-                    handleInteraction(e); // Stop propagation to prevent card collapse
-                    onSummarize(paper.id);
+                    handleInteraction(e);
+                    onChat(paper); // Trigger chat
                   }}
-                  disabled={isSummarizing}
-                  className={`
-                    inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow
-                    ${isSummarizing 
-                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700 text-white group/btn'}
-                  `}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 >
-                  {isSummarizing ? (
-                     <>
-                       <RefreshCw className="w-4 h-4 animate-spin" /> Generating...
-                     </>
-                  ) : (
-                     <>
-                       <Sparkles className="w-4 h-4 text-blue-200 group-hover/btn:text-white transition-colors" /> 
-                       Generate AI Summary
-                     </>
-                  )}
+                  <MessageSquareText className="w-4 h-4" />
+                  Ask AI
                 </button>
-              )}
+  
+                {!summary && (
+                  <button 
+                    onClick={(e) => {
+                      handleInteraction(e); // Stop propagation to prevent card collapse
+                      onSummarize(paper.id);
+                    }}
+                    disabled={isSummarizing}
+                    className={`
+                      inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow
+                      ${isSummarizing 
+                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                        : 'bg-blue-600 hover:bg-blue-700 text-white group/btn'}
+                    `}
+                  >
+                    {isSummarizing ? (
+                       <>
+                         <RefreshCw className="w-4 h-4 animate-spin" /> Generating...
+                       </>
+                    ) : (
+                       <>
+                         <Sparkles className="w-4 h-4 text-blue-200 group-hover/btn:text-white transition-colors" /> 
+                         Generate AI Summary
+                       </>
+                    )}
+                  </button>
+                )}
+			  </div>
             </div>
           </div>
         )}
@@ -275,6 +289,7 @@ function App() {
   const [sortOrder, setSortOrder] = useState("newest"); // 'newest' | 'oldest'
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [timeRange, setTimeRange] = useState("all"); // 'all', '1d', '7d', '30d'
+  const [chatPaper, setChatPaper] = useState(null);
 
   // Initial load
   useEffect(() => {
@@ -364,6 +379,10 @@ function App() {
     } finally {
       setSummarizing(prev => ({ ...prev, [id]: false }));
     }
+  };
+
+  const handleChatOpen = (paper) => {
+    setChatPaper(paper);
   };
 
   // Dynamically calculate all categories in current data (only show existing categories, don't show empty options)
@@ -560,6 +579,14 @@ function App() {
         </div>
       </div>
 
+	  {/* Render Chat Modal if a paper is selected */}
+      {chatPaper && (
+        <ChatModal 
+          paper={chatPaper} 
+          onClose={() => setChatPaper(null)} 
+        />
+      )}
+
       {/* Paper List */}
       <div className="space-y-4">
 		{filteredPapers.map((paper, index) => (
@@ -570,6 +597,7 @@ function App() {
               summary={summaries[paper.id]}
               isSummarizing={summarizing[paper.id]}
               onSummarize={handleSummarize}
+			  onChat={handleChatOpen}
             />
           ))}
 
