@@ -67,8 +67,7 @@ summarizer:
       ## 3. Experimental Results
       ## 4. Conclusion & Future Work
 
-# === 5. Reporter Agent Settings (UI) ===
-reporter:
-  graph_output_file: "knowledge_graph.html"
-  app_title: "🤖 ArXiv Multi-Agent Assistant"
-  theme_color: "#FF4B4B"
+reviewer:
+  model_name: "gpt-oss:20b-cloud"
+  system_prompt: |
+    You are an expert academic reviewer. Analyze the paper context critically.

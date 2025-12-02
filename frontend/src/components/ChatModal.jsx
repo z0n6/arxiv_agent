@@ -1,36 +1,69 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, FileText, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
 
 const ChatModal = ({ paper, onClose }) => {
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: `Hello! I'm ready to answer questions about **"${paper.title}"**.` }
-  ]);
+  // Initial state is empty, waiting for review
+  const [messages, setMessages] = useState([]); 
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  // Start with loading state true!
+  const [isLoading, setIsLoading] = useState(true); 
+  const [suggestedQuestions, setSuggestedQuestions] = useState([]);
   const messagesEndRef = useRef(null);
+  // To prevent double-fetching in React.StrictMode
+  const hasFetchedReview = useRef(false);
 
-  // Auto-scroll to bottom
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isLoading]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  // ✨ Auto-trigger Review on Mount
+  useEffect(() => {
+	const fetchReview = async () => {
+      if (hasFetchedReview.current) return;
+      hasFetchedReview.current = true;
 
-    const userMessage = { role: 'user', content: input };
+      try {
+        const res = await axios.post('http://localhost:8001/api/review', {
+          paper_title: paper.title
+        });
+
+        const { markdown_report, suggested_questions } = res.data.response;
+
+        const reviewMsg = { 
+          role: 'assistant', 
+          content: markdown_report
+        };
+        setMessages([reviewMsg]);
+        setSuggestedQuestions(suggested_questions || []);
+
+      } catch (err) {
+        // ... Error handling
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReview();
+  }, [paper.title]);
+
+  const sendMessage = async (text) => {
+    if (!text.trim()) return;
+
+    setSuggestedQuestions(prev => prev.filter(q => q !== text));
+
+    const userMessage = { role: 'user', content: text };
     setMessages(prev => [...prev, userMessage]);
-    setInput("");
     setIsLoading(true);
 
     try {
-      // Call API
       const res = await axios.post('http://localhost:8001/api/chat', {
         paper_id: paper.id,
         paper_title: paper.title,
-        query: userMessage.content,
-        history: messages.filter(m => m.role !== 'system') // Send history context
+        query: text,
+        history: messages.filter(m => m.role !== 'system')
       });
 
       const aiMessage = { role: 'assistant', content: res.data.response };
@@ -42,19 +75,22 @@ const ChatModal = ({ paper, onClose }) => {
     }
   };
 
+  const handleInputSend = () => {
+    sendMessage(input);
+    setInput("");
+  };
+
   return (
-    // Overlay (Backdrop)
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
       
-      {/* Modal Container */}
-      <div className="bg-white dark:bg-gray-900 w-full max-w-2xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700">
         
         {/* Header */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
           <div>
             <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
               <Bot className="w-5 h-5 text-blue-600" />
-              Chat with Paper
+              AI Insight & Chat
             </h3>
             <p className="text-xs text-gray-500 truncate max-w-md">{paper.title}</p>
           </div>
@@ -64,41 +100,54 @@ const ChatModal = ({ paper, onClose }) => {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 dark:bg-gray-900">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+          
+          {/* ✨ Review Loading State (Initial) */}
+          {isLoading && messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-blue-100 dark:border-blue-900 rounded-full animate-spin border-t-blue-600"></div>
+                <Bot className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-blue-600" />
+              </div>
+              <p className="text-gray-500 dark:text-gray-400 font-medium animate-pulse">
+                Analyzing paper structure & finding critiques...
+              </p>
+            </div>
+          )}
+
           {messages.map((msg, idx) => (
-            <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
               
-              {/* Avatar (AI) */}
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-1">
                   <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
               )}
 
-              {/* Bubble */}
               <div className={`
-                max-w-[80%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm
-				prose prose-sm prose-invert max-w-none
+                max-w-[85%] rounded-2xl p-5 text-sm leading-relaxed shadow-sm 
+                prose prose-sm max-w-none break-words
                 ${msg.role === 'user' 
-                  ? 'bg-blue-600 text-white rounded-br-none' 
-                  : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-bl-none'}
+                  ? 'bg-blue-600 text-white rounded-br-none prose-invert' 
+                  : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-bl-none dark:prose-invert'}
               `}>
-                <ReactMarkdown>
+                <ReactMarkdown components={{
+                   // Optional: Custom styling for specific markdown elements
+                }}>
                   {msg.content}
                 </ReactMarkdown>
               </div>
 
-              {/* Avatar (User) */}
               {msg.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-1">
                   <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </div>
               )}
             </div>
           ))}
           
-          {/* Loading Indicator */}
-          {isLoading && (
+          {/* Chat Loading Indicator (Subsequent) */}
+          {isLoading && messages.length > 0 && (
             <div className="flex gap-4 justify-start animate-pulse">
                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                   <Bot className="w-5 h-5 text-blue-600" />
@@ -111,20 +160,44 @@ const ChatModal = ({ paper, onClose }) => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex gap-3">
+        {/* ✨ Disclaimer & Input Area */}
+        <div className="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+		  {/* ✨ Suggested Questions Buttons (Chips) */}
+          {suggestedQuestions.length > 0 && !isLoading && (
+            <div className="px-4 pt-3 flex flex-wrap gap-2 animate-fade-in">
+              {suggestedQuestions.map((q, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => sendMessage(q)}
+                  className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 px-3 py-1.5 rounded-full border border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-left max-w-full truncate"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {/* Hallucination Disclaimer */}
+          <div className="px-4 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-100 dark:border-yellow-900/30 flex justify-center items-center gap-2">
+             <AlertTriangle className="w-3 h-3 text-yellow-600 dark:text-yellow-500" />
+             <span className="text-[10px] md:text-xs text-yellow-700 dark:text-yellow-400 font-medium">
+               AI can make mistakes. Please verify critical details with the source PDF.
+             </span>
+          </div>
+
+          <div className="p-4 flex gap-3">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask a question about this paper..."
+              onKeyPress={(e) => e.key === 'Enter' && handleInputSend()}
+              placeholder="Ask a specific question or follow up on the critique..."
               className="flex-1 bg-gray-100 dark:bg-gray-900 border-none outline-none rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500/50 transition-all"
               disabled={isLoading}
+              autoFocus
             />
             <button 
-              onClick={handleSend}
+              onClick={handleInputSend}
               disabled={isLoading || !input.trim()}
               className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >

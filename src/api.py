@@ -12,6 +12,7 @@ from agents.parser_agent import ParserAgent
 from agents.vector_agent import VectorAgent
 from agents.summarizer_agent import SummarizerAgent
 from agents.chat_agent import ChatAgent
+from agents.reviewer_agent import ReviewerAgent
 
 app = FastAPI(title="ArXiv Agent API")
 
@@ -32,6 +33,7 @@ def load_config():
 config = load_config()
 summarizer_agent = SummarizerAgent()
 chat_agent = ChatAgent()
+reviewer_agent = ReviewerAgent()
 # Scraper/Parser/Vector run on demand, not pre-loaded to save resources
 
 # --- Pydantic Models (define data formats) ---
@@ -53,6 +55,9 @@ class ChatRequest(BaseModel):
     paper_title: str
     query: str
     history: List[dict] = []
+
+class ReviewRequest(BaseModel):
+    paper_title: str
 
 # --- API Endpoints ---
 
@@ -103,6 +108,19 @@ def chat_with_paper(req: ChatRequest):
         )
         return {"response": response}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/review")
+def review_paper(req: ReviewRequest):
+    """
+    Generates a deep insight report (critique) for the specified paper.
+    This serves as the 'opening' for the chat session.
+    """
+    try:
+        report = reviewer_agent.review(req.paper_title)
+        return {"response": report}
+    except Exception as e:
+        print(f"Error generating review: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
