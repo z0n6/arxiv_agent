@@ -1,9 +1,15 @@
+.env
 *.swp
+.DS_Store
 
 # Python 虛擬環境
 venv/
 .venv/
 __pycache__/
+*.pyc
+
+node_modules/
+dist/
 
 # 專案資料 (僅忽略大文件和自動生成的文件)
 data/pdfs/

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, User, Loader2, FileText, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import axios from 'axios';
+import api from '../lib/api';
 
 const ChatModal = ({ paper, onClose }) => {
   // Initial state is empty, waiting for review
@@ -26,7 +26,7 @@ const ChatModal = ({ paper, onClose }) => {
       hasFetchedReview.current = true;
 
       try {
-        const res = await axios.post('http://localhost:8001/api/review', {
+        const res = await api.post('/api/review', {
           paper_title: paper.title
         });
 
@@ -59,7 +59,7 @@ const ChatModal = ({ paper, onClose }) => {
     setIsLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:8001/api/chat', {
+      const res = await api.post('/api/chat', {
         paper_id: paper.id,
         paper_title: paper.title,
         query: text,

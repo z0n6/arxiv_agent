@@ -1,11 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import axios from 'axios'
+import api from './lib/api'
 import { BookOpen, RefreshCw, FileText, Download, Sparkles, User, Calendar, Search, ArrowUpDown, ChevronDown, ChevronUp, Moon, Sun, MessageSquareText } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import ChatModal from './components/ChatModal';
-
-// Set API URL (pointing to FastAPI)
-const API_URL = "http://localhost:8001/api";
 
 // ArXiv Category Mapping (English, Extended Version)
 const CATEGORY_MAP = {
@@ -350,7 +347,7 @@ function App() {
 
   const fetchPapers = async () => {
     try {
-      const res = await axios.get(`${API_URL}/papers`);
+      const res = await api.get(`/api/papers`);
       setPapers(res.data);
     } catch (err) {
       console.error("Failed to fetch papers", err);
@@ -360,7 +357,7 @@ function App() {
   const handleRefresh = async () => {
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/refresh`);
+      await api.post(`/api/refresh`);
       await fetchPapers(); // Re-fetch the list
     } catch (err) {
       alert("Update failed: " + err.message);
@@ -372,7 +369,7 @@ function App() {
   const handleSummarize = async (id) => {
     setSummarizing(prev => ({ ...prev, [id]: true }));
     try {
-      const res = await axios.post(`${API_URL}/summarize`, { paper_id: id });
+      const res = await api.post(`/api/summarize`, { paper_id: id });
       setSummaries(prev => ({ ...prev, [id]: res.data.summary }));
     } catch (err) {
       alert("Summary generation failed");
