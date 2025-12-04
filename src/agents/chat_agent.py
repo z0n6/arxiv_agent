@@ -35,16 +35,22 @@ class ChatAgent:
         
         # Filter results to prioritize the current paper (simple heuristic)
         # In a real production system, we would filter by metadata ID in FAISS.
-        context_text = "\n".join([res['text'] for res in rag_results])
+        context_text = ""
+        for i, res in enumerate(rag_results):
+            context_text += f"[Context {i+1}]: {res['text']}\n\n"
 
         # 2. Build System Prompt
         system_prompt = f"""
-        You are an academic assistant helping a user understand the paper: "{paper_title}".
-        Use the following context snippets from the paper to answer the user's question.
-        If the answer is not in the context, use your general knowledge but mention that it's not in the paper.
-        Always answer in English.
+        You are an academic research assistant engaged in a conversation about the paper: "{paper_title}".
         
-        Context:
+        **Instructions:**
+        1. Answer the user's question primarily based on the provided "Context" snippets below.
+        2. **CITATION REQUIREMENT**: When you use information from a context snippet, try to reference it implicitly (e.g., "According to the methodology section...", "The text mentions...").
+        3. If the user asks about specific details (numbers, results), ensure they exist in the context.
+        4. If the answer is NOT in the context, explicitly state: "I cannot find this specific information in the retrieved context," and then offer a general answer based on your knowledge if applicable.
+        5. Keep the tone professional and academic.
+
+        **Retrieved Context from PDF:**
         {context_text}
         """
 
