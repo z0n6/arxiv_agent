@@ -4,7 +4,7 @@ import yaml
 import faiss
 import numpy as np
 from loguru import logger
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Optional
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
@@ -88,10 +88,10 @@ class VectorAgent:
         logger.success(f"💾 Index saved to {self.index_path}")
         logger.success(f"💾 Map saved to {self.map_path}")
 
-    def search(self, query: str, top_k: int = 3) -> List[Dict]:
+    def search(self, query: str, paper_id: Optional[str] = None, top_k: int = 3) -> List[Dict]:
         """(For testing) Semantic search function"""
         if not os.path.exists(self.index_path):
-            logger.error("❌ Index not found. Run create_index() first.")
+            logger.error("❌ Index not found.")
             return []
 
         # 載入索引
@@ -102,18 +102,27 @@ class VectorAgent:
         # Query vectorization
         query_vector = self.model.encode([query])
         
+        search_k = top_k * 10 if paper_id else top_k
+
         # Search
-        distances, indices = index.search(query_vector, top_k)
+        distances, indices = index.search(query_vector, search_k)
         
         results = []
         for i, idx in enumerate(indices[0]):
             if idx == -1: continue # No results
             meta = metadata_map.get(str(idx), {})
+
+            if paper_id and meta['paper_id'] != paper_id:
+                continue
+
             results.append({
                 "score": float(distances[0][i]), # Smaller distance means more similar
                 "paper_title": meta.get('title'),
                 "text": meta.get('text')
             })
+
+            if len(results) >= top_k:
+                break
             
         return results
 

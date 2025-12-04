@@ -31,7 +31,7 @@ class ChatAgent:
         # we retrieve more results and let the LLM know the context.
         # A simple optimization: Combine paper title with query for search
         search_query = f"{paper_title} {query}"
-        rag_results = self.vector_agent.search(search_query, top_k=5)
+        rag_results = self.vector_agent.search(search_query, paper_id=paper_id, top_k=5)
         
         # Filter results to prioritize the current paper (simple heuristic)
         # In a real production system, we would filter by metadata ID in FAISS.

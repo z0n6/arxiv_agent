@@ -79,6 +79,9 @@ class ScraperAgent:
                     return True
             except Exception as e:
                 logger.warning(f"⚠️  Download failed ({attempt+1}/{retries}): {e}")
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    logger.debug(f"🧹 Cleaned up partial file: {filename}")
                 time.sleep(2)
         
         logger.error(f"❌ Failed to download {filename} after retries.")
