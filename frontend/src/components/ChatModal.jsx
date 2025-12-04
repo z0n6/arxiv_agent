@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, User, Loader2, FileText, AlertTriangle, Download, Copy, Check } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, FileText, AlertTriangle, Download, Copy, Check, ChevronDown, ChevronRight, Quote } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import api from '../lib/api';
 
@@ -68,7 +68,11 @@ const ChatModal = ({ paper, onClose }) => {
         history: messages.filter(m => m.role !== 'system')
       });
 
-      const aiMessage = { role: 'assistant', content: res.data.response };
+      const aiMessage = {
+          role: 'assistant',
+          content: res.data.response,
+          sources: res.data.sources || []
+      };
       setMessages(prev => [...prev, aiMessage]);
     } catch (err) {
       setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please try again." }]);
@@ -179,33 +183,56 @@ const ChatModal = ({ paper, onClose }) => {
           )}
 
           {messages.map((msg, idx) => (
-            <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+            <div key={idx} className={`flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-fade-in`}>
               
-              {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className={`flex gap-4 max-w-[90%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                {/* Avatar (Bot or User) */}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 
+                  ${msg.role === 'assistant' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                  {msg.role === 'assistant' ? 
+                    <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400" /> : 
+                    <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                  }
                 </div>
-              )}
 
-              <div className={`
-                max-w-[85%] rounded-2xl p-5 text-sm leading-relaxed shadow-sm 
-                prose prose-sm max-w-none break-words
-                ${msg.role === 'user' 
-                  ? 'bg-blue-600 text-white rounded-br-none prose-invert' 
-                  : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-bl-none dark:prose-invert'}
-              `}>
-                <ReactMarkdown components={{
-                   // Optional: Custom styling for specific markdown elements
-                }}>
-                  {msg.content}
-                </ReactMarkdown>
+                {/* Message Bubble */}
+                <div className={`
+                  rounded-2xl p-5 text-sm leading-relaxed shadow-sm prose prose-sm max-w-none break-words
+                  ${msg.role === 'user' 
+                    ? 'bg-blue-600 text-white rounded-br-none prose-invert' 
+                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-bl-none dark:prose-invert'}
+                `}>
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                </div>
               </div>
 
-              {msg.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-1">
-                  <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              {/* ✨ Source Citations Section (Only for Assistant) */}
+              {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
+                <div className="ml-12 max-w-[85%] w-full">
+                  <details className="group">
+                    <summary className="list-none cursor-pointer text-xs font-medium text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors flex items-center gap-1 select-none">
+                      <Quote className="w-3 h-3" />
+                      View {msg.sources.length} Referenced Contexts
+                      <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" />
+                    </summary>
+                    
+                    <div className="mt-3 space-y-3 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
+                      {msg.sources.map((source) => (
+                        <div key={source.id} className="text-xs bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                          <div className="font-bold text-blue-600 dark:text-blue-400 mb-1 flex justify-between">
+                            <span>Context {source.id}</span>
+                            <span className="text-gray-400 font-normal text-[10px]">Relevance: {source.score.toFixed(2)}</span>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-300 leading-snug font-mono">
+                            "...{source.text}..."
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </div>
               )}
+
             </div>
           ))}
           

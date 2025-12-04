@@ -1,6 +1,6 @@
 import ollama
 from loguru import logger
-from typing import List, Dict
+from typing import List, Dict, Any
 import yaml
 import os
 import json
@@ -36,8 +36,18 @@ class ChatAgent:
         # Filter results to prioritize the current paper (simple heuristic)
         # In a real production system, we would filter by metadata ID in FAISS.
         context_text = ""
+        sources_data = []
+
         for i, res in enumerate(rag_results):
-            context_text += f"[Context {i+1}]: {res['text']}\n\n"
+            context_id = i + 1
+            context_text += f"[Context {context_id}]: {res['text']}\n\n"
+
+            sources_data.append({
+                "id": context_id,
+                "text": res['text'],
+                "score": res['score'],
+                "title": res['paper_title']
+            })
 
         # 2. Build System Prompt
         system_prompt = f"""
@@ -66,7 +76,11 @@ class ChatAgent:
         # 4. Call LLM
         try:
             response = ollama.chat(model=self.model, messages=messages)
-            return response['message']['content']
+            return {
+                "content": response['message']['content'],
+                "sources": sources_data
+            }
+
         except Exception as e:
             logger.error(f"Chat generation failed: {e}")
             return "I apologize, but I encountered an error generating the response."
