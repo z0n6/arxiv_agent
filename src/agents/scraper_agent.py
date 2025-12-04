@@ -42,6 +42,7 @@ class ScraperAgent:
                 with open(self.metadata_path, 'r', encoding='utf-8') as f:
                     existing_data = json.load(f)
             except json.JSONDecodeError:
+                logger.warning("⚠️ Metadata file corrupted, starting fresh.")
                 pass
         
         # Merge and deduplicate (based on ID)
@@ -54,9 +55,24 @@ class ScraperAgent:
                 unique_data.append(d)
                 seen.add(d['id'])
 
-        with open(self.metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(unique_data, f, ensure_ascii=False, indent=2)
-        logger.success(f"💾 Metadata saved. Total papers: {len(unique_data)}")
+		# Atomic Write Implementation
+        temp_path = f"{self.metadata_path}.tmp"
+        try:
+            # 1. Write to temp file first
+            with open(temp_path, 'w', encoding='utf-8') as f:
+                json.dump(unique_data, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno()) # Force write to disk
+            
+            # 2. Atomic rename (replace)
+            os.replace(temp_path, self.metadata_path)
+            logger.success(f"💾 Metadata saved atomically. Total papers: {len(unique_data)}")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to save metadata: {e}")
+            # Cleanup temp file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
     def download_pdf(self, url: str, filename: str) -> bool:
         """Download PDF with retry mechanism"""
